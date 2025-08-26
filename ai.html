@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Image Authenticator | Deepfake & AI Content Detection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+        
+        .dropzone {
+            transition: all 0.3s ease;
+        }
+        
+        .dropzone.active {
+            border-color: #4f46e5;
+            background-color: #eef2ff;
+        }
+        
+        .progress-bar {
+            transition: width 0.3s ease;
+        }
+        
+        #results {
+            transition: opacity 0.5s ease;
+        }
+        
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <header class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 rounded-md bg-indigo-600 flex items-center justify-center mr-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                        </svg>
+                    </div>
+                    <h1 class="text-2xl font-bold text-gray-900">AI Image Authenticator</h1>
+                </div>
+                <nav>
+                    <ul class="flex space-x-6">
+                        <li><a href="#" class="text-sm font-medium text-gray-500 hover:text-indigo-600">How It Works</a></li>
+                        <li><a href="#" class="text-sm font-medium text-gray-500 hover:text-indigo-600">Technology</a></li>
+                        <li><a href="#" class="text-sm font-medium text-gray-500 hover:text-indigo-600">API Docs</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
+        <div class="text-center mb-12">
+            <h2 class="text-3xl font-extrabold text-gray-900 sm:text-4xl">Detect AI-Generated & Deepfake Content</h2>
+            <p class="mt-4 max-w-2xl text-xl text-gray-500 mx-auto">
+                Upload an image to analyze its authenticity using our advanced AI detection model.
+            </p>
+        </div>
+
+        <div class="bg-white shadow rounded-lg p-8 mb-8">
+            <div class="max-w-3xl mx-auto">
+                <div id="upload-container" class="text-center">
+                    <div id="dropzone" class="dropzone border-2 border-dashed border-gray-300 rounded-lg p-12 cursor-pointer hover:border-indigo-400">
+                        <div class="space-y-4">
+                            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-indigo-100">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                </svg>
+                            </div>
+                            <h3 class="text-lg font-medium text-gray-900">Drag and drop your image here</h3>
+                            <p class="text-sm text-gray-500">or</p>
+                            <label for="file-upload" class="inline-flex items-center px4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 cursor-pointer">
+                                <span>Browse files</span>
+                                <input id="file-upload" name="file-upload" type="file" class="sr-only" accept="image/*">
+                            </label>
+                            <p class="text-xs text-gray-500">Supports: JPEG, PNG, WEBP up to 5MB</p>
+                        </div>
+                    </div>
+                    
+                    <div id="upload-progress" class="hidden mt-6">
+                        <div class="flex justify-between mb-1">
+                            <span class="text-sm font-medium text-gray-700">Uploading...</span>
+                            <span id="progress-percent" class="text-sm font-medium text-gray-700">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div id="progress-bar" class="progress-bar bg-indigo-600 h-2.5 rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div id="analysis-progress" class="hidden mt-6">
+                        <div class="flex justify-center">
+                            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span class="text-sm font-medium text-gray-700">Analyzing image with AI models...</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="results-container" class="hidden mt-10">
+                    <div class="flex flex-col md:flex-row gap-8">
+                        <div class="flex-1">
+                            <h3 class="text-lg font-medium text-gray-900 mb-4">Image Preview</h3>
+                            <div class="border border-gray-200 rounded-lg overflow-hidden">
+                                <img id="uploaded-image" src="" alt="Uploaded image for deepfake detection analysis" class="w-full h-auto max-h-96 object-contain" onerror="this.src='https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/13fdef42-d746-438f-ab5c-d5dd1995d516.png'">
+                            </div>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-lg font-medium text-gray-900 mb-4">Analysis Results</h3>
+                            <div id="results" class="space-y-4 opacity-0">
+                                <div class="bg-white shadow rounded-lg p-6 border-l-4 border-indigo-500">
+                                    <div class="flex items-start">
+                                        <div class="flex-shrink-0">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-500" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9z" clip-rule="evenodd" />
+                                            </svg>
+                                        </div>
+                                        <div class="ml-3 w-0 flex-1 pt-0.5">
+                                            <p id="result-text" class="text-sm font-medium text-gray-900">Analyzing image...</p>
+                                            <p id="confidence-text" class="mt-1 text-sm text-gray-500">Confidence score will appear here</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-white shadow rounded-lg overflow-hidden divide-y divide-gray-200">
+                                    <div class="px-6 py-4">
+                                        <h4 class="text-sm font-medium text-gray-900">Detailed Analysis</h4>
+                                    </div>
+                                    <div id="features-container" class="p-6 grid grid-cols-1 gap-4">
+                                        
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-white shadow rounded-lg p-6">
+                                    <h4 class="text-sm font-medium text-gray-900 mb-3">What does this mean?</h4>
+                                    <div id="explanation-text" class="prose prose-sm text-gray-500">
+                                        <p>Our AI model examines various artifacts and inconsistencies to determine if an image was generated by AI or manipulated using deepfake techniques.</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex justify-end">
+                                    <button id="analyze-again" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                        Analyze Another Image
+                                    </button>
+                                    <button id="download-report" class="ml-3 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                        Download Full Report
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-indigo-50 rounded-lg p-8">
+            <div class="max-w-3xl mx-auto text-center">
+                <h3 class="text-xl font-bold text-gray-900 mb-4">How Our Detection Works</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mt-6">
+                    <div class="space-y-3">
+                        <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-white shadow-md">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                        </div>
+                        <h4 class="text-lg font-medium text-gray-900">Feature Extraction</h4>
+                        <p class="text-sm text-gray-600">Our model examines hundreds of visual features and artifacts that are often overlooked in AI-generated images.</p>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-white shadow-md">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                            </svg>
+                        </div>
+                        <h4 class="text-lg font-medium text-gray-900">Pattern Recognition</h4>
+                        <p class="text-sm text-gray-600">The algorithm identifies subtle patterns and inconsistencies that distinguish AI-generated content from real photographs.</p>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-white shadow-md">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                            </svg>
+                        </div>
+                        <h4 class="text-lg font-medium text-gray-900">Confidence Scoring</h4>
+                        <p class="text-sm text-gray-600">Each analysis includes a confidence score indicating how certain the model is about its determination.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-white mt-12">
+        <div class="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8 border-t border-gray-200">
+            <div class="md:flex md:items-center md:justify-between">
+                <div class="flex justify-center md:order-2 space-x-6">
+                    <a href="#" class="text-gray-400 hover:text-gray-500">
+                        <span class="sr-only">GitHub</span>
+                        <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                            <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.072.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd" />
+                        </svg>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-gray-500">
+                        <span class="sr-only">Twitter</span>
+                        <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" />
+                        </svg>
+                    </a>
+                </div>
+                <div class="mt-8 md:mt-0 md:order-1">
+                    <p class="text-center text-base text-gray-400">
+                        © 2023 AI Image Authenticator. All rights reserved.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropzone = document.getElementById('dropzone');
+            const fileInput = document.getElementById('file-upload');
+            const uploadProgress = document.getElementById('upload-progress');
+            const progressBar = document.getElementById('progress-bar');
+            const progressPercent = document.getElementById('progress-percent');
+            const analysisProgress = document.getElementById('analysis-progress');
+            const uploadedImage = document.getElementById('uploaded-image');
+            const uploadContainer = document.getElementById('upload-container');
+            const resultsContainer = document.getElementById('results-container');
+            const resultText = document.getElementById('result-text');
+            const confidenceText = document.getElementById('confidence-text');
+            const featuresContainer = document.getElementById('features-container');
+            const explanationText = document.getElementById('explanation-text');
+            const analyzeAgainBtn = document.getElementById('analyze-again');
+            const downloadReportBtn = document.getElementById('download-report');
+            const resultsSection = document.getElementById('results');
+            
+            // Drag and drop functionality
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropzone.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropzone.addEventListener(eventName, highlight, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropzone.addEventListener(eventName, unhighlight, false);
+            });
+            
+            function highlight() {
+                dropzone.classList.add('active');
+            }
+            
+            function unhighlight() {
+                dropzone.classList.remove('active');
+            }
+            
+            dropzone.addEventListener('drop', handleDrop, false);
+            fileInput.addEventListener('change', handleFiles);
+            
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                handleFiles({ target: { files } });
+            }
+            
+            function handleFiles(e) {
+                const files = e.target.files;
+                if (!files.length) return;
+                
+                const file = files[0];
+                const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+                
+                if (!validTypes.includes(file.type)) {
+                    alert('Please upload a valid image file (JPEG, PNG, or WEBP)');
+                    return;
+                }
+                
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('File size must be less than 5MB');
+                    return;
+                }
+                
+                processFile(file);
+            }
+            
+            function processFile(file) {
+                // Show upload progress
+                uploadProgress.classList.remove('hidden');
+                
+                
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += Math.random() * 10;
+                    if (progress >= 100) {
+                        progress = 100;
+                        clearInterval(interval);
+                        onUploadComplete(file);
+                    }
+                    
+                    progressBar.style.width = `${progress}%`;
+                    progressPercent.textContent = `${Math.floor(progress)}%`;
+                }, 200);
+            }
+            
+            function onUploadComplete(file) {
+                uploadProgress.classList.add('hidden');
+                analysisProgress.classList.remove('hidden');
+                
+                // Display preview
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    uploadedImage.src = e.target.result;
+                    setTimeout(() => {
+                       
+                        analyzeImage(file);
+                    }, 1000);
+                };
+                reader.readAsDataURL(file);
+            }
+            
+            function analyzeImage(file) {
+                // In a real implementation, you would send the file to your Flask backend
+                // Here's how you might structure that API call:
+                /*
+                const formData = new FormData();
+                formData.append('image', file);
+                
+                fetch('/api/analyze', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRF-Token': 'YOUR_CSRF_TOKEN' // Implement CSRF protection
+                    }
+                })
+                .then(response => response.json())
+                .then(data => displayResults(data))
+                .catch(error => console.error('Error:', error));
+                */
+                
+                // For this demo, we'll simulate a response after a delay
+                setTimeout(() => {
+                    const isDeepfake = Math.random() > 0.5;
+                    uploadContainer.classList.add('hidden');
+                    resultsContainer.classList.remove('hidden');
+                    
+                    
+                    
+                    // Display results
+                    const confidenceScore = (Math.random() * 40 + 60).toFixed(1); 
+                    
+                    if (isDeepfake) {
+                        resultText.textContent = 'This image is likely AI-generated or deepfake content';
+                        resultText.parentElement.parentElement.classList.add('border-red-500');
+                        resultText.parentElement.parentElement.classList.remove('border-indigo-500');
+                        
+                        explanationText.innerHTML = `
+                            <p>Our analysis detected several markers commonly found in AI-generated or manipulated images:</p>
+                            <ul>
+                                <li>Inconsistent lighting and shadow patterns</li>
+                                <li>Artifacts in fine details like hair and teeth</li>
+                                <li>Symmetric/asymmetric inconsistencies in facial features</li>
+                                <li>Unnatural texture patterns in background elements</li>
+                            </ul>
+                            <p class="font-medium text-red-600">Exercise caution before believing everything you see in this image.</p>
+                        `;
+                    } else {
+                        resultText.textContent = 'This image appears to be authentic';
+                        resultText.parentElement.parentElement.classList.add('border-green-500');
+                        resultText.parentElement.parentElement.classList.remove('border-indigo-500');
+                        
+                        explanationText.innerHTML = `
+                            <p>Our analysis found this image to be consistent with non-AI-generated content:</p>
+                            <ul>
+                                <li>Natural lighting and shadow patterns throughout</li>
+                                <li>Consistent fine details with no obvious artifacts</li>
+                                <li>Authentic human features with realistic imperfections</li>
+                                <li>Cohesive background elements with proper perspective</li>
+                            </ul>
+                            <p class="font-medium text-green-600">This doesn't guarantee authenticity, but suggests human origin.</p>
+                        `;
+                    }
+                    
+                    confidenceText.textContent = `Confidence: ${confidenceScore}%`;
+                    const features = [
+                        { name: 'Facial Feature Consistency', value: `${(Math.random() * 30 + 70).toFixed(1)}%`, category: isDeepfake ? 'warning' : 'positive' },
+                        { name: 'Texture Anomalies', value: `${(Math.random() * 40).toFixed(1)}%`, category: isDeepfake ? 'warning' : 'neutral' },
+                        { name: 'Lighting Consistency', value: `${(Math.random() * 30 + (isDeepfake ? 30 : 70)).toFixed(1)}%`, category: isDeepfake ? 'warning' : 'positive' },
+                        { name: 'Background Cohesion', value: `${(Math.random() * 30 + (isDeepfake ? 40 : 70)).toFixed(1)}%`, category: isDeepfake ? 'warning' : 'positive' },
+                        { name: 'Edge Artifacts', value: `${(Math.random() * 30 + (isDeepfake ? 50 : 10)).toFixed(1)}%`, category: isDeepfake ? 'negative' : 'neutral' },
+                        { name: 'Color Banding', value: `${(Math.random() * 20 + (isDeepfake ? 30 : 10)).toFixed(1)}%`, category: isDeepfake ? 'warning' : 'neutral' }
+                    ];
+                    
+                    featuresContainer.innerHTML = '';
+                    features.forEach(feature => {
+                        const featureEl = document.createElement('div');
+                        featureEl.className = 'flex justify-between items-center';
+                        
+                        const nameEl = document.createElement('span');
+                        nameEl.className = 'text-sm font-medium text-gray-700';
+                        nameEl.textContent = feature.name;
+                        
+                        const valueEl = document.createElement('div');
+                        valueEl.className = 'flex items-center';
+                        
+                        const valueText = document.createElement('span');
+                        valueText.className = `text-sm font-mono ${
+                            feature.category === 'positive' ? 'text-green-600' : 
+                            feature.category === 'warning' ? 'text-yellow-600' : 
+                            feature.category === 'negative' ? 'text-red-600' : 'text-gray-600'
+                        }`;
+                        valueText.textContent = feature.value;
+                        
+                        valueEl.appendChild(valueText);
+                        featureEl.appendChild(nameEl);
+                        featureEl.appendChild(valueEl);
+                        featuresContainer.appendChild(featureEl);
+                    });
+                    
+                    // Hide analysis progress
+                    analysisProgress.classList.add('hidden');
+                    setTimeout(() => {
+                        resultsSection.style.opacity = '1';
+                    }, 100);
+                }, 3000);
+            }
+            analyzeAgainBtn.addEventListener('click', () => {
+                resultsContainer.classList.add('hidden');
+                uploadContainer.classList.remove('hidden');
+                fileInput.value = '';
+                resultsSection.style.opacity = '0';
+            });
+            
+            downloadReportBtn.addEventListener('click', () => {
+                alert('In a real implementation, this would download a PDF report with the analysis details.');
+            });
+        });
+    </script>
+</body>
+</html>
+
